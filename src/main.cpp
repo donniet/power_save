@@ -8,6 +8,7 @@
 #include <libcec/cec.h>
 #include <libcec/cecloader.h>
 #include <signal.h>
+#include <string>
 
 namespace po = boost::program_options;
 
@@ -18,6 +19,7 @@ std::atomic_flag interrupted = ATOMIC_FLAG_INIT;
 libcec_configuration g_config;
 ICECAdapter *g_parser;
 ICECCallbacks        g_callbacks;
+std::string g_port;
 
 void handle_signal(int) {
 	interrupted.test_and_set();
@@ -31,7 +33,19 @@ void on_interrupt() {
 void CecLogMessage(void *cbParam, const cec_log_message* message) {
 	//std::cerr << message->message << std::endl;
 }
-void CecAlert(void *cbParam, const libcec_alert type, const libcec_parameter param) {}
+void CecAlert(void *cbParam, const libcec_alert type, const libcec_parameter param) {
+	switch (type) {
+	case CEC_ALERT_CONNECTION_LOST:
+		std::cerr << "connection lost, trying to reconnect\n" << std::endl;
+		if(g_parser) {
+			g_parser->Close();
+			if(!g_parser->Open(g_port.c_str())) {
+				std::cerr << "failed to reconnect.\n";
+				interrupted.test_and_set();
+			}
+		}
+	}
+}
 
 int main(int ac, char * av[]) {
 	using namespace std::chrono_literals;
@@ -86,8 +100,9 @@ int main(int ac, char * av[]) {
 	for(int i = 0; i < iDevicesFound; i++) {
 		std::cout << devices[i].strComName << std::endl;
 	}
-	if (!g_parser->Open(devices[0].strComName)) {
-		std::cerr << "could not open device: " << devices[0].strComName << "\n";
+	g_port = devices[0].strComName;
+	if (!g_parser->Open(g_port.c_str())) {
+		std::cerr << "could not open device: " << g_port << "\n";
 		UnloadLibCec(g_parser);
 		return 1;
 	}
