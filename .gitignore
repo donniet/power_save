@@ -1,0 +1,7 @@
+*.out
+*.o
+*.d
+a.out
+*.swp
+build/
+
