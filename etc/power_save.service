@@ -1,0 +1,12 @@
+[Unit]
+Description=Motion Detecting Power Saver
+After=syslog.target
+
+[Service]
+EnvironmentFile=-/etc/default/power_save
+ExecStart=/home/pi/power_save/power_save --pin $IRPIN --standby $STANDBY
+
+KillSignal=SIGINT
+
+[Install]
+WantedBy=mult-user.target
