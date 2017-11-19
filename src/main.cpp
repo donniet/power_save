@@ -117,7 +117,7 @@ int main(int ac, char * av[]) {
 
 	bool power_on = true;
 	auto addr = (cec_logical_address)0;
-	std::cout << "powering on\n";
+	std::cout << "powering on" << std::endl;
 	g_parser->PowerOnDevices(addr);
 
 	while(!interrupted.test_and_set()) {
@@ -127,10 +127,10 @@ int main(int ac, char * av[]) {
 		detected.clear();
 
 		auto t = std::chrono::system_clock::now();
-		if(sensed) {
-			std::cout << "sensed\n";
+		if(sensed || digitalRead(ir_pin)) {
+			if (sensed) std::cout << "sensed" << std::endl;
 			if (!power_on) {
-				std::cout << "powering on\n";
+				std::cout << "powering on" << std::endl;
 				g_parser->PowerOnDevices(addr);
 				power_on = true;
 			}
@@ -139,7 +139,7 @@ int main(int ac, char * av[]) {
 		}
 
 		if (t > standby_time && power_on) {
-			std::cout << "entering standby\n";
+			std::cout << "entering standby" << std::endl;
 			g_parser->StandbyDevices(addr);
 			power_on = false;
 		}
@@ -148,5 +148,6 @@ int main(int ac, char * av[]) {
 	}
 
 	UnloadLibCec(g_parser);
+	std::cout << "unloaded cleanly" << std::endl;
 	return 0;
 }

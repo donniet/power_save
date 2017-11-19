@@ -1,4 +1,4 @@
-TARGET ?= a.out
+TARGET ?= power_save
 SRC_DIRS ?= ./src
 CC := g++
 
