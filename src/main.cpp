@@ -129,6 +129,8 @@ int main(int ac, char * av[]) {
 		auto t = std::chrono::system_clock::now();
 		if(sensed || digitalRead(ir_pin)) {
 			if (sensed) std::cout << "sensed" << std::endl;
+			auto pwr = g_parser->GetDevicePowerStatus(addr);
+			power_on = pwr != CEC_POWER_STATUS_STANDBY;
 			if (!power_on) {
 				std::cout << "powering on" << std::endl;
 				g_parser->PowerOnDevices(addr);
