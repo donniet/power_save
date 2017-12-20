@@ -31,7 +31,7 @@ void on_interrupt() {
 }
 
 void CecLogMessage(void *cbParam, const cec_log_message* message) {
-	//std::cerr << message->message << std::endl;
+	std::cerr << message->message << std::endl;
 }
 void CecAlert(void *cbParam, const libcec_alert type, const libcec_parameter param) {
 	switch (type) {
@@ -56,7 +56,7 @@ int main(int ac, char * av[]) {
 	desc.add_options()
 		("help", "produce help message")
 		("pin", po::value<int>()->default_value(17), "ir sensor pin")
-		("standby", po::value<double>()->default_value(5.), "standby timeout")
+		("standby", po::value<double>()->default_value(60.), "standby timeout")
 	;
 	po::variables_map vm;
 	po::store(po::parse_command_line(ac, av, desc), vm);
@@ -70,15 +70,16 @@ int main(int ac, char * av[]) {
 	signal(SIGINT, handle_signal);	
 	
 	g_config.Clear();
-	snprintf(g_config.strDeviceName, 13, "CECTester");
+	snprintf(g_config.strDeviceName, 13, "Smart Mirror");
 	g_config.clientVersion      = LIBCEC_VERSION_CURRENT;
-	g_config.bActivateSource    = 0;
+	g_config.bActivateSource    = 1;
 	g_callbacks.logMessage      = &CecLogMessage;
 	//g_callbacks.keyPress        = &CecKeyPress;
 	//g_callbacks.commandReceived = &CecCommand;
 	g_callbacks.alert           = &CecAlert;
 	g_config.callbacks = &g_callbacks;
-	g_config.deviceTypes.Add(CEC_DEVICE_TYPE_RECORDING_DEVICE);
+	//g_config.deviceTypes.Add(CEC_DEVICE_TYPE_RECORDING_DEVICE);
+	g_config.deviceTypes.Add(CEC_DEVICE_TYPE_PLAYBACK_DEVICE);
 	//g_config.deviceTypes.Add(CEC_DEVICE_TYPE_TV);
 
 	g_parser = LibCecInitialise(&g_config);
@@ -117,8 +118,13 @@ int main(int ac, char * av[]) {
 
 	bool power_on = true;
 	auto addr = (cec_logical_address)0;
+	std::cout << "power cycling" << std::endl;
+	//g_parser->StandbyDevices(addr);
+	//using namespace std::chrono_literals;
+	//std::this_thread::sleep_for(10s);
 	std::cout << "powering on" << std::endl;
 	g_parser->PowerOnDevices(addr);
+	//std::cout << "power on" << std::endl;
 
 	while(!interrupted.test_and_set()) {
 		interrupted.clear();
@@ -130,12 +136,15 @@ int main(int ac, char * av[]) {
 		if(sensed || digitalRead(ir_pin)) {
 			if (sensed) std::cout << "sensed" << std::endl;
 			auto pwr = g_parser->GetDevicePowerStatus(addr);
-			power_on = pwr != CEC_POWER_STATUS_STANDBY;
-			if (!power_on) {
+			//g_parser->SendKeypress(addr, CEC_USER_CONTROL_CODE_VOLUME_DOWN);
+			//g_parser->SendKeyRelease(addr, CEC_USER_CONTROL_CODE_VOLUME_DOWN);
+			//std::cout << "pwr status: " << pwr << std::endl;
+			if (!power_on || pwr != CEC_POWER_STATUS_ON) {
 				std::cout << "powering on" << std::endl;
-				g_parser->PowerOnDevices(addr);
-				power_on = true;
+				power_on = g_parser->PowerOnDevices(addr);
+				std::cout << "success: " << power_on << std::endl;
 			}
+			g_parser->SetActiveSource(CEC_DEVICE_TYPE_PLAYBACK_DEVICE);
 			standby_time = t + standby;
 			continue;
 		}
