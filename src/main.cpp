@@ -57,6 +57,7 @@ int main(int ac, char * av[]) {
 		("help", "produce help message")
 		("pin", po::value<int>()->default_value(17), "ir sensor pin")
 		("standby", po::value<double>()->default_value(60.), "standby timeout")
+		("verbose", "turn on all cec messages")
 	;
 	po::variables_map vm;
 	po::store(po::parse_command_line(ac, av, desc), vm);
@@ -67,13 +68,17 @@ int main(int ac, char * av[]) {
 		return 1;
 	}
 
+	bool verbose = (vm.count("verbose") > 0);
+
 	signal(SIGINT, handle_signal);	
 	
 	g_config.Clear();
 	snprintf(g_config.strDeviceName, 13, "Smart Mirror");
 	g_config.clientVersion      = LIBCEC_VERSION_CURRENT;
 	g_config.bActivateSource    = 1;
-	g_callbacks.logMessage      = &CecLogMessage;
+	if (verbose) {
+		g_callbacks.logMessage      = &CecLogMessage;
+	}
 	//g_callbacks.keyPress        = &CecKeyPress;
 	//g_callbacks.commandReceived = &CecCommand;
 	g_callbacks.alert           = &CecAlert;
@@ -118,7 +123,7 @@ int main(int ac, char * av[]) {
 
 	bool power_on = true;
 	auto addr = (cec_logical_address)0;
-	std::cout << "power cycling" << std::endl;
+	//std::cout << "power cycling" << std::endl;
 	//g_parser->StandbyDevices(addr);
 	//using namespace std::chrono_literals;
 	//std::this_thread::sleep_for(10s);
